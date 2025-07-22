@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WatchGuard MDR ROI Calculator</title>
+  <!-- Import Roboto font from Google Fonts. If offline, the browser will fall back to sans-serif -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    /* Core palette based on WatchGuard brand guidelines */
+    :root {
+      --wg-red: #E81410;
+      --wg-red-dark: #B32317;
+      --wg-dark-blue: #002663;
+      --wg-blue: #035996;
+      --wg-dark-gray: #333333;
+      --wg-gray: #808080;
+      --wg-light-gray: #F5F5F5;
+      --wg-white: #FFFFFF;
+      --wg-green: #2A8F48;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Roboto', sans-serif;
+      background-color: var(--wg-light-gray);
+      color: var(--wg-dark-gray);
+      line-height: 1.5;
+    }
+
+    /* Top navigation bar */
+    .nav-bar {
+      background-color: var(--wg-white);
+      border-bottom: 1px solid #E0E0E0;
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .nav-bar .logo {
+      height: 32px;
+    }
+
+    /* Hero section */
+    .hero {
+      background-color: var(--wg-red);
+      color: var(--wg-white);
+      padding: 48px 24px;
+      text-align: center;
+    }
+    .hero h1 {
+      margin: 0;
+      font-size: 32px;
+      font-weight: 700;
+    }
+
+    /* Main content */
+    .main-content {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 40px 24px;
+    }
+    .main-content h2 {
+      margin-top: 0;
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--wg-dark-gray);
+    }
+    .main-content p {
+      max-width: 720px;
+      font-size: 16px;
+      color: var(--wg-gray);
+    }
+
+    /* Calculator layout */
+    .calculator-wrapper {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 40px;
+      margin-top: 32px;
+    }
+    .calculator-inputs, .calculator-results {
+      flex: 1;
+      min-width: 300px;
+      background-color: var(--wg-white);
+      border: 1px solid var(--wg-red);
+      border-radius: 8px;
+      padding: 24px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.06);
+    }
+    .calculator-results {
+      display: flex;
+      flex-direction: column;
+    }
+    .section-title {
+      margin-top: 0;
+      margin-bottom: 16px;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--wg-dark-blue);
+    }
+    label {
+      display: block;
+      margin-top: 16px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--wg-dark-gray);
+    }
+    input[type="number"], select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 4px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    /* Slider styling */
+    .slider-wrapper {
+      display: flex;
+      align-items: center;
+      margin-top: 4px;
+    }
+    input[type="range"] {
+      flex: 1;
+      -webkit-appearance: none;
+      height: 4px;
+      border-radius: 2px;
+      background: #ddd;
+      outline: none;
+      margin-right: 8px;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--wg-red);
+      cursor: pointer;
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--wg-red);
+      cursor: pointer;
+    }
+    .slider-value {
+      min-width: 40px;
+      font-size: 14px;
+      text-align: right;
+      color: var(--wg-dark-gray);
+    }
+    /* Checkbox group */
+    .checkbox-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 8px;
+    }
+    .checkbox-group label {
+      display: flex;
+      align-items: center;
+      font-weight: 400;
+      font-size: 14px;
+      color: var(--wg-dark-gray);
+    }
+    .checkbox-group input {
+      margin-right: 4px;
+    }
+    /* Results summary */
+    .results-content p {
+      margin: 0;
+      margin-bottom: 12px;
+    }
+    .results-content .result-item {
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
+    .results-content .result-item strong {
+      display: inline-block;
+      min-width: 160px;
+    }
+
+    /* Stylish result rows */
+    .result-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 10px;
+    }
+    .result-label {
+      font-size: 14px;
+      color: var(--wg-dark-gray);
+      flex: 1;
+    }
+    .result-value {
+      font-size: 22px;
+      font-weight: 700;
+      text-align: right;
+      flex: 0 0 auto;
+    }
+    .result-value.value-build {
+      color: var(--wg-red);
+    }
+    .result-value.value-mdr {
+      color: var(--wg-dark-blue);
+    }
+    .result-value.value-savings {
+      color: var(--wg-red);
+    }
+    /* Box styling for savings */
+    .result-value.value-savings-box {
+      font-size: 22px;
+      background-color: var(--wg-green);
+      color: var(--wg-white);
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+    .result-value.value-roi {
+      color: var(--wg-dark-blue);
+    }
+
+    /* Smaller values for non-monetary metrics (FTEs, days) */
+    .result-value.small {
+      font-size: 18px;
+    }
+    /* Download button */
+    .download-button {
+      margin-top: auto;
+      padding: 12px 16px;
+      border: none;
+      background-color: var(--wg-red);
+      color: var(--wg-white);
+      font-weight: 600;
+      text-align: center;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .download-button:hover {
+      background-color: var(--wg-red-dark);
+    }
+    /* Tooltip */
+    .tooltip {
+      position: relative;
+      display: inline-block;
+      cursor: help;
+      margin-left: 4px;
+      color: var(--wg-red);
+      font-weight: 700;
+    }
+
+    /* Custom tooltip bubble */
+    .tooltip::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: 125%;
+      background-color: var(--wg-dark-gray);
+      color: var(--wg-white);
+      padding: 6px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      line-height: 1.2;
+      white-space: normal;
+      max-width: 220px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease-in-out;
+      z-index: 100;
+    }
+    .tooltip:hover::after {
+      opacity: 1;
+    }
+
+    /* Modal overlay for lead capture form */
+    .modal {
+      display: none; /* Hidden by default */
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0, 0, 0, 0.5);
+    }
+    .modal-content {
+      background-color: var(--wg-white);
+      margin: 10% auto;
+      padding: 24px;
+      border: 1px solid var(--wg-red);
+      border-radius: 8px;
+      width: 90%;
+      max-width: 480px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      position: relative;
+    }
+    .modal-content h3 {
+      margin-top: 0;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--wg-dark-blue);
+    }
+    .modal-content label {
+      display: block;
+      margin-top: 12px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--wg-dark-gray);
+    }
+    .modal-content input[type="text"], .modal-content input[type="email"], .modal-content input[type="tel"] {
+      width: 100%;
+      padding: 8px;
+      margin-top: 4px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+      font-size: 14px;
+    }
+    .modal-actions {
+      margin-top: 20px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+    .modal-actions button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .modal-actions .cancel-btn {
+      background-color: var(--wg-gray);
+      color: var(--wg-white);
+    }
+    .modal-actions .submit-btn {
+      background-color: var(--wg-red);
+      color: var(--wg-white);
+    }
+
+    /* Simple bar chart styling */
+    .bar-chart-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .bar-label {
+      flex: 0 0 140px;
+      font-size: 12px;
+      color: var(--wg-dark-gray);
+    }
+    .bar-bg {
+      flex: 1;
+      background-color: #f0f0f0;
+      height: 12px;
+      border-radius: 6px;
+      margin-right: 8px;
+      position: relative;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      border-radius: 6px;
+      transition: width 0.5s ease-in-out;
+    }
+    .bar-value {
+      flex: 0 0 80px;
+      font-size: 12px;
+      text-align: right;
+      color: var(--wg-dark-gray);
+    }
+
+    /* Advanced settings */
+    .advanced-toggle {
+      margin-top: 24px;
+      padding: 8px 12px;
+      background: none;
+      border: 1px solid var(--wg-red);
+      border-radius: 4px;
+      color: var(--wg-red);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .advanced-toggle:hover {
+      background-color: var(--wg-red);
+      color: var(--wg-white);
+    }
+    .advanced-content {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid #E0E0E0;
+    }
+
+    /* Row for advanced and partner toggles */
+    .toggle-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+    }
+    .advanced-title {
+      margin: 0 0 8px;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--wg-dark-blue);
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation bar with WatchGuard logo on the left -->
+  <nav class="nav-bar">
+    <img class="logo" src="https://upload.wikimedia.org/wikipedia/commons/e/e0/Watchguard_logo.svg" alt="WatchGuard logo">
+    <!-- Placeholder for potential navigation items; left empty for simplicity -->
+    <div></div>
+  </nav>
+
+  <!-- Hero section inspired by WatchGuard ROI calculator page -->
+  <section class="hero">
+    <h1>ROI Calculator: Save with WatchGuard MDR</h1>
+  </section>
+
+  <!-- Main content section with description and calculator -->
+  <section class="main-content">
+    <h2>See how much you can save with WatchGuard Managed Detection &amp; Response</h2>
+    <p>Use this interactive calculator to compare the full cost of setting up your own Security Operations Center (SOC) with the value of WatchGuard MDR. 24/7 monitoring, powerful AI, human threat hunters and built‑in automation make WatchGuard MDR not just more affordable — it’s more effective.</p>
+
+    <!-- Calculator wrapper: two-column layout with inputs on the left and results on the right -->
+    <div class="calculator-wrapper">
+      <!-- Input column -->
+      <div class="calculator-inputs">
+        <h3 class="section-title">Your Inputs</h3>
+
+        <label for="numEndpoints">Number of endpoints
+          <!-- Custom tooltip uses a data attribute for the explanatory text -->
+          <span class="tooltip" data-tooltip="Endpoints include desktops, laptops, servers and mobile devices used by employees.">?</span>
+        </label>
+        <input type="number" id="numEndpoints" min="0" value="100" />
+
+        <label for="analystSalary">Average salary of a security analyst (USD)
+          <span class="tooltip" data-tooltip="The annual salary (before benefits) of a typical security analyst in your organization or region.">?</span>
+        </label>
+        <input type="number" id="analystSalary" min="0" value="120000" />
+
+        <label for="numAlerts">Estimated total threat alerts per year
+          <span class="tooltip" data-tooltip="Total number of security alerts your team handles in a typical year.">?</span>
+        </label>
+        <input type="number" id="numAlerts" min="0" value="10000" />
+
+        <label for="triagePercent">Percent of alerts you triage today
+          <span class="tooltip" data-tooltip="The percentage of incoming alerts your team currently investigates and resolves.">?</span>
+        </label>
+        <div class="slider-wrapper">
+          <input type="range" id="triagePercent" min="0" max="100" value="50" />
+          <span id="triageValue" class="slider-value">50%</span>
+        </div>
+
+        <label for="riskTolerance">Risk tolerance
+          <span class="tooltip" data-tooltip="Lower values mean you are more risk‑averse (greater investment in security); higher values indicate a higher tolerance for risk.">?</span>
+        </label>
+        <div class="slider-wrapper">
+          <input type="range" id="riskTolerance" min="0" max="100" value="50" />
+          <span id="riskValue" class="slider-value">50</span>
+        </div>
+
+        <label for="serviceLevel">Service level
+          <span class="tooltip" data-tooltip="Choose the level of MDR services you need, from basic monitoring to full incident response.">?</span>
+        </label>
+        <select id="serviceLevel">
+          <option value="Monitoring">Monitoring</option>
+          <option value="Threat Hunting and Response" selected>Threat Hunting and Response</option>
+          <option value="Full Incident Response">Full Incident Response</option>
+        </select>
+
+        <label>Existing WatchGuard products
+          <span class="tooltip" data-tooltip="Select any WatchGuard products you already use; discounts are applied for existing customers.">?</span>
+        </label>
+        <div class="checkbox-group">
+          <label><input type="checkbox" class="product-checkbox" value="Firewall" /> Firewall</label>
+          <label><input type="checkbox" class="product-checkbox" value="AuthPoint" /> AuthPoint</label>
+          <label><input type="checkbox" class="product-checkbox" value="NDR" /> NDR</label>
+          <label><input type="checkbox" class="product-checkbox" value="Endpoint" /> Endpoint</label>
+        </div>
+
+        <label for="industry">Industry
+          <span class="tooltip" data-tooltip="Choose the industry that best describes your organization; breach costs and risk vary by sector.">?</span>
+        </label>
+        <select id="industry">
+          <option value="Healthcare">Healthcare</option>
+          <option value="Financial">Financial</option>
+          <option value="Pharmaceuticals">Pharmaceuticals</option>
+          <option value="Energy">Energy</option>
+          <option value="Industrial">Industrial</option>
+          <option value="Critical Infrastructure">Critical Infrastructure</option>
+          <option value="Other" selected>Other</option>
+        </select>
+
+        <label for="country">Country
+          <span class="tooltip" data-tooltip="Breach costs vary by country; pick your primary operating country.">?</span>
+        </label>
+        <select id="country">
+          <option value="USA" selected>USA</option>
+          <option value="Middle East">Middle East</option>
+          <option value="Canada">Canada</option>
+          <option value="Germany">Germany</option>
+          <option value="Japan">Japan</option>
+          <option value="Other">Other</option>
+        </select>
+
+        <!-- Toggle row for Advanced and Partner settings -->
+        <div class="toggle-row">
+          <button id="advancedToggle" class="advanced-toggle" type="button">Advanced settings ▼</button>
+          <button id="partnerToggle" class="advanced-toggle" type="button">Partner settings ▼</button>
+        </div>
+
+        <!-- Advanced settings content -->
+        <div id="advancedContent" class="advanced-content" style="display: none;">
+          <h4 class="advanced-title">Advanced Settings</h4>
+          <label for="numServers">Number of servers
+            <span class="tooltip" data-tooltip="Servers (physical or virtual) that run workloads and applications. Some providers charge separately for servers.">?</span>
+          </label>
+          <input type="number" id="numServers" min="0" value="0" />
+
+          <label for="burdenRate">Employee burden rate
+            <span class="tooltip" data-tooltip="Additional overhead for analysts, including benefits, taxes, vacation and training. This percentage increases the salary cost.">?</span>
+          </label>
+          <div class="slider-wrapper">
+            <input type="range" id="burdenRate" min="0" max="100" value="0" />
+            <span id="burdenValue" class="slider-value">0%</span>
+          </div>
+
+          <label>Technology stack requirements
+            <span class="tooltip" data-tooltip="Select any additional tools you need the MDR provider to supply (SIEM, EDR or Threat Intelligence). These add to your MDR subscription cost.">?</span>
+          </label>
+          <div class="checkbox-group">
+            <label><input type="checkbox" class="tech-checkbox" value="siem" /> SIEM</label>
+            <label><input type="checkbox" class="tech-checkbox" value="edr" /> EDR</label>
+            <label><input type="checkbox" class="tech-checkbox" value="threatIntel" /> Threat Intelligence</label>
+          </div>
+
+          <label><input type="checkbox" id="compliance" /> Subject to strict regulatory compliance?
+            <span class="tooltip" data-tooltip="Check if your organization must meet strict regulations (e.g., HIPAA, PCI, SOX). This increases potential breach costs due to fines and penalties.">?</span>
+          </label>
+        </div>
+
+        <!-- Partner settings content -->
+        <div id="partnerPasswordSection" class="advanced-content" style="display: none;">
+          <label for="partnerPassword">Enter partner password to unlock pricing:</label>
+          <input type="password" id="partnerPassword" />
+          <button id="partnerUnlockBtn" type="button" style="margin-top: 8px; padding: 8px 12px; border: none; background-color: var(--wg-dark-blue); color: var(--wg-white); border-radius: 4px; cursor: pointer;">Unlock</button>
+        </div>
+        <div id="partnerContent" class="advanced-content" style="display: none;">
+          <h4 class="advanced-title">Partner Pricing</h4>
+          <label for="partnerMonitoringPrice">Monitoring price per endpoint (USD/month)
+            <span class="tooltip" data-tooltip="Set your own selling price for basic 24/7 monitoring. Default is $15 per endpoint per month.">?</span>
+          </label>
+          <input type="number" id="partnerMonitoringPrice" min="0" step="1" value="15" />
+          <label for="partnerThreatPrice">Threat hunting & response price per endpoint (USD/month)
+            <span class="tooltip" data-tooltip="Set your own selling price for threat hunting and response. Default is $20 per endpoint per month.">?</span>
+          </label>
+          <input type="number" id="partnerThreatPrice" min="0" step="1" value="20" />
+          <label for="partnerFullPrice">Full incident response price per endpoint (USD/month)
+            <span class="tooltip" data-tooltip="Set your own selling price for the full incident response service. Default is $25 per endpoint per month.">?</span>
+          </label>
+          <input type="number" id="partnerFullPrice" min="0" step="1" value="25" />
+        </div>
+      </div>
+
+      <!-- Results column -->
+      <div class="calculator-results">
+        <h3 class="section-title">Results Summary</h3>
+        <div id="resultsSummary" class="results-content">
+          <p>Fill out the fields to see your potential savings.</p>
+        </div>
+
+        <!-- Visual cost and capacity comparison (rendered dynamically) -->
+        <div id="chartContainer" style="margin-top: 24px; display: none;">
+          <h4 style="margin: 0 0 8px; font-size: 16px; font-weight: 700; color: var(--wg-dark-blue);">Cost Comparison</h4>
+          <div class="bar-chart-row" id="barInhouse">
+            <span class="bar-label">Build your own SOC</span>
+            <div class="bar-bg"><div class="bar-fill" id="barInhouseFill"></div></div>
+            <span class="bar-value" id="barInhouseValue"></span>
+          </div>
+          <div class="bar-chart-row" id="barMDR">
+            <span class="bar-label">WatchGuard MDR</span>
+            <div class="bar-bg"><div class="bar-fill" id="barMDRFill"></div></div>
+            <span class="bar-value" id="barMDRValue"></span>
+          </div>
+          <h4 style="margin: 16px 0 8px; font-size: 16px; font-weight: 700; color: var(--wg-dark-blue);">Freed SOC Capacity</h4>
+          <div class="bar-chart-row" id="barFreed">
+            <span class="bar-label">Freed FTEs</span>
+            <div class="bar-bg"><div class="bar-fill" id="barFreedFill"></div></div>
+            <span class="bar-value" id="barFreedValue"></span>
+          </div>
+        </div>
+        <button id="downloadReport" class="download-button" type="button">Download your report</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Lead capture modal (hidden by default). Appears when user clicks Download -->
+  <div id="leadModal" class="modal">
+    <div class="modal-content">
+      <h3>Get your full report</h3>
+      <p style="font-size: 14px; color: var(--wg-gray);">Enter your details to receive your customised ROI report and a free consultation.</p>
+      <form id="leadForm">
+        <label for="firstName">First Name</label>
+        <input type="text" id="firstName" name="firstName" required />
+        <label for="lastName">Last Name</label>
+        <input type="text" id="lastName" name="lastName" required />
+        <label for="companyName">Company Name</label>
+        <input type="text" id="companyName" name="companyName" required />
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" required />
+        <label for="phone">Phone (optional)</label>
+        <input type="tel" id="phone" name="phone" />
+        <div class="modal-actions">
+          <button type="button" id="cancelLead" class="cancel-btn">Cancel</button>
+          <button type="submit" id="submitLead" class="submit-btn">Submit</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- jsPDF library for client‑side PDF generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
